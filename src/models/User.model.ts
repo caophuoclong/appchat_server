@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
-import { IUser } from "src/Interfaces/IUser";
+import IUser from "src/Interfaces/IUser";
 
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
         unique: true,
+        index: true,
+        readonly: true,
     },
     password: {
         type: String,
@@ -31,6 +33,49 @@ const userSchema = new mongoose.Schema({
     salt: {
         type: String,
         required: true,
+    },
+    name: {
+        type: String
+    },
+    friends: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Users",
+        }
+    ],
+    conversations: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Conversations",
+        }
+    ],
+    messages: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Messages",
+        }
+    ],
+    friendsRequested: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Users",
+        }
+    ],
+    friendsPending: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Users",
+        }
+    ],
+    friendsRejected: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Users",
+        }
+    ],
+    createdAt: {
+        type: Date,
+        default: Date.now,
     }
 })
 

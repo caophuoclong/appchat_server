@@ -1,9 +1,11 @@
 import express from "express";
-import HttpException from "src/exceptions/httpException";
-const errorHandling = (error: HttpException, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const status = error.status || 500;
+import TokenException from "../exceptions/tokenException";
+const errorHandling = (error: TokenException, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const code = error.code || 500;
+    const status = error.status || "failed";
     const message = error.message || "Something went wrong with server!";
     return res.json({
+        code,
         status,
         message
     })

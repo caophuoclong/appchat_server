@@ -20,6 +20,7 @@
   "homepage": "https://github.com/Caophuoclong/appchat_server#readme",
   "devDependencies": {
     "@types/express": "^4.17.13",
+    "@types/jsonwebtoken": "^8.5.8",
     "@types/socket.io": "^3.0.2",
     "dotenv": "^16.0.0",
     "nodemon": "^2.0.15",
@@ -30,7 +31,9 @@
     "casual": "^1.6.2",
     "express": "^4.17.3",
     "graphql": "^16.3.0",
+    "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.2.7",
+    "redis": "^4.0.4",
     "socket.io": "^4.4.1"
   }
 }

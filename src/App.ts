@@ -1,16 +1,19 @@
 import express from "express";
 import mongoose from "mongoose";
+import type { ConnectOptions } from "mongoose"
 import { MONGO_USERNAME, MONGO_PASSWORD } from "./configs/index"
 import errorHandling from "./middlewares/errorHandling";
+import redisClient from "./utils/redis-client";
 class App {
     public app: express.Application;
 
-    public constructor(controllers: Array<{ router: express.IRouter }>) {
+    public constructor(controllers: Array<express.IRouter>) {
         this.app = express();
         this.initialConnectDatabase();
         this.initialMiddleware();
         this.initialController(controllers);
         this.initialErrorHandler();
+        redisClient.connect();
 
     }
 
@@ -19,16 +22,20 @@ class App {
         this.app.use(express.urlencoded({ extended: true }));
     }
 
-    private initialController(controllers: Array<{ router: express.IRouter }>) {
+    private initialController(controllers: Array<express.IRouter>) {
         controllers.forEach(controller => {
-            this.app.use("/", controller.router);
+            this.app.use("/api", controller);
         })
     }
     private initialErrorHandler() {
         this.app.use(errorHandling);
     }
     private initialConnectDatabase() {
-        mongoose.connect(`mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:27017`)
+        mongoose.connect(`mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:27017`,
+            {
+                useNewUrlParser: true,
+                dbName: "appchat"
+            } as ConnectOptions)
             .then(result => {
                 console.log("Connect to database successfully");
             })

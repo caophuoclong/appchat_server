@@ -1,54 +1,157 @@
 import IController from "../Interfaces/IController";
-import express from "express";
-import { IUser } from "src/Interfaces/IUser";
-import crypto from "crypto";
-import User from "../models/User.model"
+import express, { NextFunction } from "express";
+import User from "../models/User"
+import IUser, { IUserInformation } from "../Interfaces/IUser";
 import HttpException from "../exceptions/httpException"
-
+import UserException from "../exceptions/UserException";
+import { createAccessToken, createRefreshToken } from "../utils/auth";
+import redisClient from "../utils/redis-client";
+import { validateMiddleware } from "../middlewares/validateMiddleware";
 class UserController implements IController {
     private path: string;
-    private router: express.Router;
+    private _router: express.Router;
+    public get router(): express.Router {
+        return this._router;
+    }
     private user = User;
     public constructor() {
         this.path = "/user";
-        this.router = express.Router();
+        this._router = express.Router();
+        this.initialRouter();
     }
 
     initialRouter() {
-        this.router.post(this.path + "/signup", this.handleSignUp)
+        this._router.post(this.path + "/signup", this.handleSignUp.bind(this))
+        this._router.post(`${this.path}/signin`, this.handleSignIn)
+        this._router.put(`${this.path}/addfriend`, validateMiddleware, this.addFriend);
+        this._router.put(`${this.path}/acceptrequest`, validateMiddleware, this.acceptRequest);
+        this._router.put(`${this.path}/rejectrequest`, validateMiddleware, this.rejectRequest);
+        this._router.put(`${this.path}/deletefriend`, validateMiddleware, this.deleteFriend);
+        this._router.put(`${this.path}/update/`, validateMiddleware, this.updateInformation)
+        this._router.put(`${this.path}/update/password`, validateMiddleware, this.updatePassword)
     }
     private handleSignUp(req: express.Request<{}, {}, IUser>, res: express.Response, next: express.NextFunction) {
-        const { dateOfBirth, username, password, email, gender, numberPhone } = req.body;
-        const salt = crypto.randomBytes(20).toString("hex");
-        const newPassword = this.hashPassword(password, salt);
-        const createdUser = new this.user({
-            username,
-            password: newPassword,
-            salt: salt,
-            email,
-            gender,
-            numberPhone,
-            dateOfBirth
+        const user = new User({
+            ...req.body,
         })
-        const { password: test, ...xxx } = req.body;
-        createdUser.save()
+        user.register()
             .then(result => {
                 return res.json({
                     status: 200,
                     message: "Create user successfully!",
-                    user: {
-                        ...xxx
-                    }
                 })
             })
             .catch(error => {
-                next(new HttpException(500, error.message));
+                if (error.code === 11000)
+                    next(new UserException(user.username));
+                else next(new HttpException(500, error.message));
             })
     }
-    private hashPassword(password: string, salt: string) {
-        let hash = crypto.createHmac("sha512", salt);
-        hash.update(password);
-        let value = hash.digest("hex");
-        return value;
+    private handleSignIn(req: express.Request<{}, {}, { username: string, password: string }>, res: express.Response, next: NextFunction) {
+        const user = new User({
+            ...req.body
+        })
+        user.login().then(async (result) => {
+            return res.json({
+                ...result
+            })
+        }
+        )
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
     }
+    private updateInformation(req: express.Request<{}, {}, IUserInformation>, res: express.Response, next: express.NextFunction) {
+        const { username } = req.user;
+        const user = new User({
+            username,
+            ...req.body,
+        });
+        user.updateInformation().then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+    }
+    private updatePassword(req: express.Request<{}, {}, { oldPassword: string, newPassword: string }>, res: express.Response, next: express.NextFunction) {
+        const { username, _id } = req.user;
+        const { newPassword, oldPassword } = req.body;
+        const user = new User({
+            username,
+            password: newPassword,
+        });
+        user.updatePassword(oldPassword, newPassword).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+    private addFriend(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const { _id } = req.body;
+        const username = req.user!.username;
+        const user = new User({
+            username,
+            _id: req.user._id
+        });
+        user.addFriend({ _id: _id! }).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+    private acceptRequest(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const { _id } = req.body;
+        const username = req.user.username;
+        const user = new User({
+            username,
+            _id: req.user._id
+        });
+        user.acceptRequest({ _id: _id! }).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+    private rejectRequest(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const { _id } = req.body;
+        const username = req.user!.username;
+        const user = new User({
+            username,
+            _id: req.user._id
+        });
+        user.rejectRequest({ _id: _id! }).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+    private deleteFriend(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const { _id } = req.body;
+        const username = req.user!.username;
+        const user = new User({
+            username,
+        });
+        user.deleteFriend({ _id: _id! }).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+
 }
+export default UserController;
