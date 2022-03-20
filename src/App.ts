@@ -4,6 +4,7 @@ import type { ConnectOptions } from "mongoose"
 import { MONGO_USERNAME, MONGO_PASSWORD } from "./configs/index"
 import errorHandling from "./middlewares/errorHandling";
 import redisClient from "./utils/redis-client";
+import cors from "cors"
 class App {
     public app: express.Application;
 
@@ -20,6 +21,10 @@ class App {
     private initialMiddleware() {
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
+        this.app.use(cors({
+            origin: "*",
+            credentials: true
+        }))
     }
 
     private initialController(controllers: Array<express.IRouter>) {

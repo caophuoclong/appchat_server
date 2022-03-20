@@ -8,6 +8,7 @@ export default interface IUser {
     gender?: gender;
     salt?: string;
     name?: string;
+    imgUrl?: string;
 }
 export interface dateOfBirth {
     date: number;
@@ -15,7 +16,7 @@ export interface dateOfBirth {
     year: number;
 }
 export type gender = "male" | "female" | "other";
-export interface IUserData {
+export interface IUserData extends IUser {
     username: string;
     name?: string;
     email?: string;
@@ -23,6 +24,8 @@ export interface IUserData {
     gender?: gender;
     _id: string;
     dateOfBirth?: dateOfBirth;
+    imgUrl?: string;
+
 }
 export type IUserInformation = Omit<IUserData, "username" | "_id">
 

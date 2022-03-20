@@ -16,17 +16,14 @@ const messageSchema = new mongoose.Schema({
         ref: "Users",
         required: true,
     },
-    senderUsername: {
-        type: String,
-        required: true,
-    },
-    receiverUsername: {
-        type: String,
-        required: true,
-    },
     createAt: {
         type: Date,
         default: Date.now,
+    },
+    type: {
+        type: String,
+        default: "text",
+
     },
     conversationId: {
         type: mongoose.Types.ObjectId,

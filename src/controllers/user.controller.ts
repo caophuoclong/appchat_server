@@ -4,9 +4,8 @@ import User from "../models/User"
 import IUser, { IUserInformation } from "../Interfaces/IUser";
 import HttpException from "../exceptions/httpException"
 import UserException from "../exceptions/UserException";
-import { createAccessToken, createRefreshToken } from "../utils/auth";
-import redisClient from "../utils/redis-client";
 import { validateMiddleware } from "../middlewares/validateMiddleware";
+import Conversations from "../models/Conversation";
 class UserController implements IController {
     private path: string;
     private _router: express.Router;
@@ -22,7 +21,8 @@ class UserController implements IController {
 
     initialRouter() {
         this._router.post(this.path + "/signup", this.handleSignUp.bind(this))
-        this._router.post(`${this.path}/signin`, this.handleSignIn)
+        this._router.post(`${this.path}/signin`, this.handleSignIn);
+        this._router.get(`${this.path}/me`, validateMiddleware, this.handleGetMe);
         this._router.put(`${this.path}/addfriend`, validateMiddleware, this.addFriend);
         this._router.put(`${this.path}/acceptrequest`, validateMiddleware, this.acceptRequest);
         this._router.put(`${this.path}/rejectrequest`, validateMiddleware, this.rejectRequest);
@@ -33,6 +33,7 @@ class UserController implements IController {
     private handleSignUp(req: express.Request<{}, {}, IUser>, res: express.Response, next: express.NextFunction) {
         const user = new User({
             ...req.body,
+            name: req.body.username,
         })
         user.register()
             .then(result => {
@@ -81,6 +82,22 @@ class UserController implements IController {
             password: newPassword,
         });
         user.updatePassword(oldPassword, newPassword).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+    private handleGetMe(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const username = req.user!.username;
+        const id = req.user!._id;
+        const user = new User({
+            username,
+            _id: id,
+        });
+        user.getMe().then((result) => {
             res.json({
                 ...result,
             })

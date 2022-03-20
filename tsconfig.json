@@ -26,5 +26,4 @@
       "@types", "node_modules/@tyes"
     ]
   },
-  "include": ["./src/**/*.ts"],
 }

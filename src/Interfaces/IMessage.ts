@@ -1,10 +1,11 @@
+export type messageType = "text" | "image";
 export default interface IMessage {
+    _id?: string;
     text: string;
     senderId: string;
     receiverId: string;
-    senderUsername: string;
-    receiverUsername: string;
-    createAt: Date;
-    modifiedAt: Date;
-    type: "text" | "image",
+    createAt?: Date;
+    modifiedAt?: Date;
+    type: messageType;
+    conversationId: string;
 }

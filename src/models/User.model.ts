@@ -14,9 +14,18 @@ const userSchema = new mongoose.Schema({
         required: true,
     },
     dateOfBirth: {
-        date: Number,
-        month: Number,
-        year: Number,
+        date: {
+            type: Number,
+            default: 1
+        },
+        month: {
+            type: Number,
+            default: 1
+        },
+        year: {
+            type: Number,
+            default: 2000
+        }
     },
     email: {
         type: String,
@@ -28,7 +37,7 @@ const userSchema = new mongoose.Schema({
     },
     gender: {
         type: String,
-        required: true,
+        default: "other",
     },
     salt: {
         type: String,
@@ -73,6 +82,10 @@ const userSchema = new mongoose.Schema({
             ref: "Users",
         }
     ],
+    imgUrl: {
+        type: String,
+        default: ""
+    },
     createdAt: {
         type: Date,
         default: Date.now,

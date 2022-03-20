@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { IConversation } from "../Interfaces";
 
 const conversationSchema = new mongoose.Schema({
     participants: [
@@ -13,10 +14,18 @@ const conversationSchema = new mongoose.Schema({
             ref: "Messages",
         }
     ],
+    latest: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Messages",
+    },
+    name: {
+        type: String
+    },
     createAt: {
         type: Date,
         default: Date.now,
     },
 });
 
-const conversationModel = mongoose.model("Conversations", conversationSchema);
+const conversationModel = mongoose.model<IConversation & mongoose.Document>("Conversations", conversationSchema);
+export default conversationModel;

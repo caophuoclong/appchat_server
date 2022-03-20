@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { createAccessToken, createRefreshToken } from '../utils/auth';
 import redisClient from "../utils/redis-client";
 import { IResolveRequest } from '../Interfaces/IResolve';
+import Conversations from './Conversation';
 class User {
     private _id?: string | undefined;
     public get id(): string | undefined {
@@ -69,8 +70,16 @@ class User {
     public set name(value: string | undefined) {
         this._name = value;
     }
+    private _imgUrl?: string | undefined;
+    public get imgUrl(): string | undefined {
+        return this._imgUrl;
+    }
+    public set imgUrl(value: string | undefined) {
+        this._imgUrl = value;
+    }
     private user: IUser & Document;
-    public constructor({ username, password, dateOfBirth, gender, email, numberPhone, name, _id }: IUser) {
+    public constructor({ username, password, dateOfBirth, gender, email, numberPhone, name, _id, imgUrl }: IUser) {
+        console.log(_id);
         this.id = _id;
         this.username = username;
         this.password = password;
@@ -79,6 +88,7 @@ class User {
         this.gender = gender;
         this.numberPhone = numberPhone;
         this.name = name;
+        this.imgUrl = imgUrl;
     }
     private createUser() {
         this.user = new UserModel({
@@ -89,6 +99,7 @@ class User {
             email: this.email,
             numberPhone: this.numberPhone,
             salt: this.salt,
+            name: this.name,
         });
     }
     public register() {
@@ -103,9 +114,10 @@ class User {
             code: number;
             message: string;
             status: string;
-            data: IUserData;
-            refreshToken?: string;
-            accessToken?: string;
+            data: {
+                refreshToken?: string;
+                accessToken?: string;
+            };
         }>((resolve, reject) => {
             UserModel.findOne({ username: this.username })
                 .then((user) => {
@@ -122,8 +134,8 @@ class User {
                                 id,
                                 ...userData
                             } = user.toObject();
-                            const accessToken = createAccessToken(userData);
-                            const refreshToken = createRefreshToken(userData);
+                            const accessToken = createAccessToken({ _id: userData._id, username: userData.username });
+                            const refreshToken = createRefreshToken({ _id: userData._id, username: userData.username });
                             redisClient
                                 .set(userData.username, refreshToken)
                                 .then((result: any) => {
@@ -137,10 +149,10 @@ class User {
                                 message: 'Login Success',
                                 status: 'success',
                                 data: {
-                                    ...userData,
+                                    accessToken,
+                                    refreshToken,
                                 },
-                                accessToken,
-                                refreshToken,
+
                             });
                         } else {
                             reject({
@@ -158,6 +170,44 @@ class User {
                 .catch((err) => {
                     reject(err);
                 });
+        });
+    }
+    public getMe() {
+        return new Promise<{
+            code: number;
+            message: string;
+            status: string;
+            data: IUserData;
+        }>((resolve, reject) => {
+            console.log(this._id);
+            UserModel.findById(this._id).populate({
+                path: "conversations",
+                populate: {
+                    path: "participants",
+                    select: ["username", "name", "imgUrl"]
+                },
+
+            }).populate({
+                path: "conversations",
+                populate: {
+                    path: "latest",
+                },
+            }).then((result) => {
+                delete result!.password;
+                delete result!.salt;
+                resolve({
+                    code: 200,
+                    message: 'Get user success',
+                    status: 'success',
+                    data: result!
+                })
+            }).catch(error => {
+                reject({
+                    code: 500,
+                    message: 'Get user fail',
+                    status: 'fail',
+                })
+            })
         });
     }
     public updateInformation() {
@@ -295,11 +345,25 @@ class User {
                 }
             })
             Promise.all([addToFriendList, addToFriendList2])
-                .then(() => {
-                    resolve({
-                        code: 200,
-                        status: 'success',
-                        message: 'Agree request successfully!',
+                .then(async () => {
+                    const conversation = await Conversations.createConversation({ _id1: this.id!, _id2: _id })
+                    const xxx1 = UserModel.findByIdAndUpdate(this._id, {
+                        $push: {
+                            conversations: conversation._id
+                        }
+
+                    })
+                    const xxx2 = UserModel.findByIdAndUpdate(_id, {
+                        $push: {
+                            conversations: conversation._id
+                        }
+                    })
+                    Promise.all([xxx1, xxx2]).then(() => {
+                        resolve({
+                            code: 200,
+                            status: 'success',
+                            message: 'Agree request successfully!',
+                        })
                     })
                 })
                 .catch(error => {
@@ -371,6 +435,13 @@ class User {
                     });
             }
         );
+    }
+    public static addMessage({ messageId, userId }: { messageId: string, userId: string }) {
+        return UserModel.findByIdAndUpdate(userId, {
+            $push: {
+                messages: messageId
+            }
+        })
     }
     private hashPassword() {
         const salt = crypto.randomBytes(20).toString('hex');
