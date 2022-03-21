@@ -20,25 +20,29 @@ class Token implements IController {
         this.initialRouter();
     }
     initialRouter() {
-        this._router.post(`${this.path}/:username`, this.handleFreshToken);
+        this._router.post(`${this.path}/refresh`, this.handleFreshToken);
     }
-    private async handleFreshToken(req: express.Request<{ username: string }, {}, {
+    private async handleFreshToken(req: express.Request<{}, {}, {
         refreshToken: string
     }>, res: express.Response, next: express.NextFunction) {
         const { refreshToken } = req.body;
-        const { username } = req.params;
-        const storedreFreshToken = await redisClient.get(username);
-        if (!refreshToken || storedreFreshToken !== refreshToken)
+        if (!refreshToken)
             return next(new TokenException("relogin", "Invalid token!"));
         try {
             const decoded = jwt.verify(refreshToken, JWT_SECRET_REFRESH!) as IUserData;
-            const accessToken = createAccessToken(decoded);
-            return res.json({
-                code: 200,
-                status: "success",
-                message: "Refresh token successfully!",
-                token: accessToken
-            })
+            const { username, _id } = decoded;
+            const storedreFreshToken = await redisClient.get(username);
+            if (refreshToken === storedreFreshToken) {
+                const accessToken = createAccessToken(decoded);
+                return res.json({
+                    code: 200,
+                    status: "success",
+                    message: "Refresh token successfully!",
+                    token: accessToken
+                })
+            } else {
+                return next(new TokenException("relogin", "Invalid token!"));
+            }
         } catch (error) {
             console.log(error);
             if (error.name === "TokenExpiredError") {

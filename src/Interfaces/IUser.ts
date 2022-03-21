@@ -1,3 +1,5 @@
+import IConversation from "./IConversation";
+
 export default interface IUser {
     _id?: string;
     username: string;
@@ -9,6 +11,12 @@ export default interface IUser {
     salt?: string;
     name?: string;
     imgUrl?: string;
+    conversations?: IConversation;
+    messages?: Array<string>;
+    friends?: Array<string>;
+    friendsRequested?: Array<string>;
+    friendsPending?: Array<string>;
+    friendsRejected?: Array<string>;
 }
 export interface dateOfBirth {
     date: number;

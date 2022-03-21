@@ -221,13 +221,25 @@ class User {
                         numberPhone: this.numberPhone,
                         gender: this.gender,
                         dateOfBirth: this.dateOfBirth,
-                    }
+                        imgUrl: this._imgUrl
+                    }, {
+                    new: true
+                }
                 )
                     .then((result) => {
+                        const { name, email, gender, dateOfBirth, numberPhone, imgUrl } = result!;
                         resolve({
                             code: 200,
                             status: 'success',
                             message: 'Update successfully!',
+                            data: {
+                                name,
+                                email,
+                                gender,
+                                dateOfBirth,
+                                numberPhone,
+                                imgUrl
+                            },
                         });
                     })
                     .catch((error) => {
