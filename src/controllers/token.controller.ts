@@ -32,7 +32,8 @@ class Token implements IController {
             const decoded = jwt.verify(refreshToken, JWT_SECRET_REFRESH!) as IUserData;
             const { username, _id } = decoded;
             const storedreFreshToken = await redisClient.get(username);
-            if (refreshToken === storedreFreshToken) {
+            console.log(storedreFreshToken);
+            if (refreshToken === (storedreFreshToken)) {
                 const accessToken = createAccessToken(decoded);
                 return res.json({
                     code: 200,

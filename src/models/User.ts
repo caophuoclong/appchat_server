@@ -308,32 +308,42 @@ class User {
     public addFriend({ _id }: { _id: string }) {
         return new Promise<IResolveRequest>(
             async (resolve, reject) => {
-                const addToPending = UserModel.findOneAndUpdate({
-                    username: this.username,
-                }, {
-                    $push: {
-                        friendsPending: _id,
-                    }
+                const existed = await UserModel.findOne({ friends: [_id] });
+                if (existed) return reject({
+                    code: 401,
+                    message: 'User is already your friend!',
+                    status: 'fail'
                 })
-                const addToRequest = UserModel.findByIdAndUpdate(_id, {
-                    $push: {
-                        friendsRequested: this.id,
-                    }
-                })
-                Promise.all([addToPending, addToRequest]).then(() => {
-                    resolve({
-                        code: 200,
-                        status: 'success',
-                        message: 'Sent friend request successfully!',
+                else {
+                    const addToPending = UserModel.findOneAndUpdate({
+                        username: this.username,
+                    }, {
+                        $push: {
+                            friendsPending: _id,
+                        }
                     })
-                })
-                    .catch(error => {
-                        reject({
-                            code: 500,
-                            status: 'error',
-                            message: "Send request failed"
-                        });
+                    const addToRequest = UserModel.findByIdAndUpdate(_id, {
+                        $push: {
+                            friendsRequested: this.id,
+                        }
                     })
+                    Promise.all([addToPending, addToRequest]).then(() => {
+                        resolve({
+                            code: 200,
+                            status: 'success',
+                            message: 'Sent friend request successfully!',
+                        })
+                    })
+                        .catch(error => {
+                            reject({
+                                code: 500,
+                                status: 'error',
+                                message: "Send request failed"
+                            });
+                        })
+
+                }
+
 
             }
         );
@@ -453,6 +463,37 @@ class User {
             $push: {
                 messages: messageId
             }
+        })
+    }
+    public static handleSearchFriend({ type, value }: { type: string | undefined, value: string | undefined }) {
+        return new Promise<IResolveRequest>(async (resolver, reject) => {
+            if (!type || !value) {
+                reject({
+                    code: 400,
+                    status: 'error',
+                    message: 'Missing params'
+                })
+            } else {
+                const user = await UserModel.find({
+                    [type]: value
+                }, "_id username name imgUrl");
+                if (user) {
+                    resolver({
+                        code: 200,
+                        status: 'success',
+                        message: 'Search successfully!',
+                        data: user,
+                    })
+                } else {
+                    reject({
+                        code: 404,
+                        status: 'error',
+                        message: 'User is not found!',
+                    })
+                }
+            }
+
+
         })
     }
     private hashPassword() {

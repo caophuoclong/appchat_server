@@ -29,6 +29,7 @@ class UserController implements IController {
         this._router.put(`${this.path}/deletefriend`, validateMiddleware, this.deleteFriend);
         this._router.put(`${this.path}/update/`, validateMiddleware, this.updateInformation)
         this._router.put(`${this.path}/update/password`, validateMiddleware, this.updatePassword)
+        this._router.get(`${this.path}/search`, validateMiddleware, this.searchFriend)
     }
     private handleSignUp(req: express.Request<{}, {}, IUser>, res: express.Response, next: express.NextFunction) {
         const user = new User({
@@ -161,6 +162,22 @@ class UserController implements IController {
             username,
         });
         user.deleteFriend({ _id: _id! }).then((result) => {
+            res.json({
+                ...result,
+            })
+        })
+            .catch(error => {
+                next(new HttpException(error.code, error.message));
+            })
+    }
+    private searchFriend(req: express.Request<{}, { type: string, value: string }>, res: express.Response, next: express.NextFunction) {
+        const type = req.query.type as string;
+        const value = req.query.value as string;
+        User.handleSearchFriend({
+            type,
+            value
+        }).then((result) => {
+            console.log(result);
             res.json({
                 ...result,
             })
