@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { AppController, ConversationController, MessageController, TokenController, UserController } from "./controllers";
 import redisClient from "./utils/redis-client";
 import { IMessage } from "./Interfaces";
+import { PORT } from "./configs"
 const app = new Express([
     new AppController().router,
     new TokenController().router,
@@ -46,4 +47,6 @@ io.on("connection", (socket) => {
     })
 })
 
-server.listen(4004);
+server.listen(PORT, () => {
+    console.log("App is runnign on port " + PORT)
+});
