@@ -27,7 +27,7 @@ services:
     volumes:
       - ./cert.pem:/etc/ssl/cert.pem
       - ./key.pem:/etc/ssl/key.pem
-      - ./nginx/tcplong.xyz:/etc/nginx/conf.d/tcplong.xyz
+      - ./nginx/tcplong.xyz:/etc/nginx/conf.d/tcplong.conf
     
 
 
