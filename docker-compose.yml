@@ -18,6 +18,19 @@ services:
       - "6379:6379"
     volumes:
       - ./redis:/data
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./cert.pem:/etc/ssl/cert.pem
+      - ./key.pem:/etc/ssl/key.pem
+      - ./nginx/tcplong.xyz:/etc/nginx/site-available/tcplong.xyz
+    
+
+
   app:
     build: ./
     container_name: server
