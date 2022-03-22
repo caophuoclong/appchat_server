@@ -1,7 +1,6 @@
 import { IUser, IMessage } from "../Interfaces";
 import IConversation from "../Interfaces/IConversation";
 import ConversationModel from "./conversation.model";
-import { Query, Document } from "mongoose";
 class Conversations implements IConversation {
     _id?: string;
     participants: IUser[];

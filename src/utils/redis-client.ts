@@ -1,4 +1,4 @@
-import { REDIS_HOST, REDIS_PORT } from "src/configs";
+import { REDIS_HOST, REDIS_PORT } from "../configs";
 import { createClient } from "redis";
 const client = createClient({
     socket: {

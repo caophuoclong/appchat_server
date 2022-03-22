@@ -5,7 +5,6 @@ import IUser, { IUserInformation } from "../Interfaces/IUser";
 import HttpException from "../exceptions/httpException"
 import UserException from "../exceptions/UserException";
 import { validateMiddleware } from "../middlewares/validateMiddleware";
-import Conversations from "../models/Conversation";
 class UserController implements IController {
     private path: string;
     private _router: express.Router;

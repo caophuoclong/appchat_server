@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   mongodb:
+    container_name: mongo
     image: mongo:latest
     ports:
       - "27017:27017"
@@ -12,16 +13,18 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=516489
   redis:
     image: redis:latest
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
       - ./redis:/data
   app:
     build: ./
+    container_name: server
     ports: 
       - 4004:4004
     volumes:
-      - ./.env:/app/src
+      - ./env-docker/.env:/app/src/.env
     depends_on:
       - mongodb
       - redis
