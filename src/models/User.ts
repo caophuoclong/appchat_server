@@ -179,18 +179,23 @@ class User {
             status: string;
             data: IUserData;
         }>((resolve, reject) => {
-            console.log(this._id);
             UserModel.findById(this._id).populate({
                 path: "conversations",
                 populate: {
                     path: "participants",
-                    select: ["username", "name", "imgUrl"]
+                    select: ["username", "name", "imgUrl"],
                 },
 
             }).populate({
                 path: "conversations",
                 populate: {
                     path: "latest",
+                    options: {
+                        sort: {
+                            createAt: -1
+                        }
+                    }
+
                 },
             }).then((result) => {
                 delete result!.password;
