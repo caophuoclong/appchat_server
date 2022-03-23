@@ -15,8 +15,9 @@ class Conversations implements IConversation {
         this.createAt = createAt;
         this.modifiedAt = modifiedAt;
     }
-    public static getConverSationById(id: string) {
-        return ConversationModel.findById(id).populate("messages").sort({ createAt: -1 });
+    public static async getConverSationById(id: string) {
+        await Conversations.makeUnReadMessageEmpty({ conversationId: id });
+        return ConversationModel.findById(id).populate("messages").sort({ createAt: -1 })
     }
     public static createConversation({ _id1, _id2 }: { _id1: string, _id2: string }) {
         const conversation = new ConversationModel({
@@ -44,6 +45,30 @@ class Conversations implements IConversation {
         const xxx2 = ConversationModel.findByIdAndUpdate(conversationId, update2, options);
         return Promise.all([xxx1, xxx2]);
     }
+    public static addToUnReadMessages({ messageId, conversationId }: { messageId: string, conversationId: string }) {
+        const update = {
+            $push: {
+                unreadmessages: messageId,
+            },
+        };
+        const options = {
+            new: true,
+        };
+        return ConversationModel.findByIdAndUpdate(conversationId, update, options);
+    }
+    public static makeUnReadMessageEmpty({ conversationId }: { conversationId: string }) {
+        const update = {
+            $set: {
+                unreadmessages: [
+
+                ],
+            },
+        };
+        const options = {
+            new: true,
+        };
+        return ConversationModel.findByIdAndUpdate(conversationId, update, options);
+    }
     public static removeMessage({ messageId, conversationId }: { messageId: string, conversationId: string }) {
         const update = {
             $pull: {
@@ -69,5 +94,6 @@ class Conversations implements IConversation {
     public static addUserToConversation(..._id: string[]) {
         // for group;
     }
+
 }
 export default Conversations;

@@ -32,7 +32,6 @@ export default class Conversation implements IController {
             next(new TokenException("failed", "Get conversation failed"))
         })
     }
-
 }
 // Language: typescript
 // Path: src/controllers/conversation.controller.ts

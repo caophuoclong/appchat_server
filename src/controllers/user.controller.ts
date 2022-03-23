@@ -113,6 +113,7 @@ class UserController implements IController {
             username,
             _id: req.user._id
         });
+        console.log(_id);
         user.addFriend({ _id: _id! }).then((result) => {
             res.json({
                 ...result,
@@ -176,7 +177,6 @@ class UserController implements IController {
             type,
             value
         }).then((result) => {
-            console.log(result);
             res.json({
                 ...result,
             })

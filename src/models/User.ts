@@ -195,24 +195,30 @@ class User {
                             createAt: -1
                         }
                     }
-
                 },
-            }).then((result) => {
-                delete result!.password;
-                delete result!.salt;
-                resolve({
-                    code: 200,
-                    message: 'Get user success',
-                    status: 'success',
-                    data: result!
-                })
-            }).catch(error => {
-                reject({
-                    code: 500,
-                    message: 'Get user fail',
-                    status: 'fail',
-                })
             })
+                .populate({
+                    path: "conversations",
+                    populate: {
+                        path: "unreadmessages",
+                    }
+                })
+                .then((result) => {
+                    delete result!.password;
+                    delete result!.salt;
+                    resolve({
+                        code: 200,
+                        message: 'Get user success',
+                        status: 'success',
+                        data: result!
+                    })
+                }).catch(error => {
+                    reject({
+                        code: 500,
+                        message: 'Get user fail',
+                        status: 'fail',
+                    })
+                })
         });
     }
     public updateInformation() {
@@ -313,8 +319,9 @@ class User {
     public addFriend({ _id }: { _id: string }) {
         return new Promise<IResolveRequest>(
             async (resolve, reject) => {
-                const existed = await UserModel.findOne({ friends: [_id] });
-                if (existed) return reject({
+                const existed = await UserModel.findById(this._id);
+                console.log(existed);
+                if (existed!.friends?.includes(_id)) return reject({
                     code: 401,
                     message: 'User is already your friend!',
                     status: 'fail'

@@ -2,6 +2,7 @@ import IMessage, { messageType } from "../Interfaces/IMessage";
 import MessageModel from "./message.model";
 import Conversation from "./Conversation"
 import { IResolveRequest } from "../Interfaces/IResolve";
+import redisClient from "../utils/redis-client";
 import User from "./User";
 class Message implements IMessage {
     _id?: string;
@@ -30,12 +31,14 @@ class Message implements IMessage {
                 type: this.type,
             });
             message.save()
-                .then(result => {
+                .then(async (result) => {
                     this._id = result.id;
                     const addToConversation = Conversation.addMessage({ messageId: this._id!, conversationId: this.conversationId! })
+                    const userChoosen = await redisClient.get(`choose_conversation_${this.receiverId}`);
+                    const addToUnReaddMessages = userChoosen === this.conversationId ? null : Conversation.addToUnReadMessages({ messageId: this._id!, conversationId: this.conversationId! });
                     const addToUser1 = User.addMessage({ messageId: this._id!, userId: this.senderId! });
                     const addToUser2 = User.addMessage({ messageId: this._id!, userId: this.receiverId! });
-                    Promise.all([addToConversation, addToUser1, addToUser2]).then(() => {
+                    Promise.all([addToConversation, addToUser1, addToUser2, addToUnReaddMessages]).then(() => {
                         resolve({
                             code: 200,
                             status: "success",

@@ -14,6 +14,12 @@ const conversationSchema = new mongoose.Schema({
             ref: "Messages",
         }
     ],
+    unreadmessages: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Messages",
+        }
+    ],
     latest: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Messages",
