@@ -5,6 +5,7 @@ import IUser, { IUserInformation } from "../Interfaces/IUser";
 import HttpException from "../exceptions/httpException"
 import UserException from "../exceptions/UserException";
 import { validateMiddleware } from "../middlewares/validateMiddleware";
+import TokenException from "../exceptions/tokenException";
 class UserController implements IController {
     private path: string;
     private _router: express.Router;
@@ -29,6 +30,8 @@ class UserController implements IController {
         this._router.put(`${this.path}/update/`, validateMiddleware, this.updateInformation)
         this._router.put(`${this.path}/update/password`, validateMiddleware, this.updatePassword)
         this._router.get(`${this.path}/search`, validateMiddleware, this.searchFriend)
+        this._router.get(`${this.path}/conversations`, validateMiddleware, this.getConversations);
+        this._router.get(`${this.path}/friendsall`, validateMiddleware, this.getListFriends);
     }
     private handleSignUp(req: express.Request<{}, {}, IUser>, res: express.Response, next: express.NextFunction) {
         const user = new User({
@@ -113,7 +116,6 @@ class UserController implements IController {
             username,
             _id: req.user._id
         });
-        console.log(_id);
         user.addFriend({ _id: _id! }).then((result) => {
             res.json({
                 ...result,
@@ -169,6 +171,22 @@ class UserController implements IController {
             .catch(error => {
                 next(new HttpException(error.code, error.message));
             })
+    }
+    private getConversations(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const _id = req.user!._id;
+        User.getConversations(_id).then(result => {
+            res.json(result);
+        }).catch(error => {
+            next(new TokenException("failed", "Failed to  get conversations"));
+        })
+    }
+    private getListFriends(req: express.Request, res: express.Response, next: express.NextFunction) {
+        const _id = req.user!._id;
+        User.getListFriend(_id).then(result => {
+            res.json(result);
+        }).catch(error => {
+            next(new TokenException("failed", "Failed to  get conversations"));
+        })
     }
     private searchFriend(req: express.Request<{}, { type: string, value: string }>, res: express.Response, next: express.NextFunction) {
         const type = req.query.type as string;

@@ -1,7 +1,7 @@
 import Express from "./App";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { AppController, ConversationController, MessageController, TokenController, UserController } from "./controllers";
+import { AppController, ConversationController, MessageController, TokenController, UserController, NotificationController } from "./controllers";
 import redisClient from "./utils/redis-client";
 import { IMessage } from "./Interfaces";
 import { PORT } from "./configs"
@@ -11,6 +11,7 @@ const app = new Express([
     new UserController().router,
     new MessageController().router,
     new ConversationController().router,
+    new NotificationController().router
 ]);
 const server = createServer(app.app);
 const io = new Server(server, {
@@ -47,7 +48,6 @@ io.on("connection", (socket) => {
         });
     })
     socket.on("check_online", async (data: string) => {
-        console.log(1, data);
         const user = await redisClient.get(`user_${data}`);
         if (user) {
             socket.emit("re_check_online", true);
@@ -69,6 +69,30 @@ io.on("connection", (socket) => {
             } = JSON.parse(data);
             redisClient.set(`choose_conversation_${user_id}`, conversation_id);
         })
+    socket.on("on_typing", async (data: string) => {
+        const id = await redisClient.get(`user_${data}`);
+        if (id) {
+            io.to(id).emit("reply_typing", true);
+        }
+    })
+    socket.on("not_typing", async (data: string) => {
+        const id = await redisClient.get(`user_${data}`);
+        if (id) {
+            io.to(id).emit("reply_typing", false);
+        }
+    })
+    socket.on("live_noti", async (param: string) => {
+        const id = await redisClient.get(`user_${param}`);
+        if (id) {
+            io.to(id).emit("rep_live_noti");
+        }
+    })
+    socket.on("accept_friend", async (param) => {
+        const id = await redisClient.get(`user_${param}`);
+        if (id) {
+            io.to(id).emit("rep_accept_friend");
+        }
+    })
 })
 
 server.listen(PORT, () => {

@@ -3,7 +3,7 @@ import UserModel from './User.model';
 import { Document } from 'mongoose';
 import crypto from 'crypto';
 import { createAccessToken, createRefreshToken } from '../utils/auth';
-import redisClient from "../utils/redis-client";
+import redisClient from '../utils/redis-client';
 import { IResolveRequest } from '../Interfaces/IResolve';
 import Conversations from './Conversation';
 class User {
@@ -78,8 +78,17 @@ class User {
         this._imgUrl = value;
     }
     private user: IUser & Document;
-    public constructor({ username, password, dateOfBirth, gender, email, numberPhone, name, _id, imgUrl }: IUser) {
-        console.log(_id);
+    public constructor({
+        username,
+        password,
+        dateOfBirth,
+        gender,
+        email,
+        numberPhone,
+        name,
+        _id,
+        imgUrl,
+    }: IUser) {
         this.id = _id;
         this.username = username;
         this.password = password;
@@ -134,8 +143,14 @@ class User {
                                 id,
                                 ...userData
                             } = user.toObject();
-                            const accessToken = createAccessToken({ _id: userData._id, username: userData.username });
-                            const refreshToken = createRefreshToken({ _id: userData._id, username: userData.username });
+                            const accessToken = createAccessToken({
+                                _id: userData._id,
+                                username: userData.username,
+                            });
+                            const refreshToken = createRefreshToken({
+                                _id: userData._id,
+                                username: userData.username,
+                            });
                             redisClient
                                 .set(userData.username, refreshToken)
                                 .then((result: any) => {
@@ -152,7 +167,6 @@ class User {
                                     accessToken,
                                     refreshToken,
                                 },
-
                             });
                         } else {
                             reject({
@@ -179,28 +193,41 @@ class User {
             status: string;
             data: IUserData;
         }>((resolve, reject) => {
-            UserModel.findById(this._id).populate({
-                path: "conversations",
-                populate: {
-                    path: "participants",
-                    select: ["username", "name", "imgUrl"],
-                },
-
-            }).populate({
-                path: "conversations",
-                populate: {
-                    path: "latest",
+            UserModel.findById(this._id)
+                .populate({
+                    path: 'conversations',
+                    populate: {
+                        path: 'participants',
+                        select: ['username', 'name', 'imgUrl'],
+                    },
+                })
+                .populate({
+                    path: 'conversations',
+                    populate: {
+                        path: 'latest',
+                        options: {
+                            sort: {
+                                createAt: -1,
+                            },
+                        },
+                    },
+                })
+                .populate({
+                    path: 'conversations',
+                    populate: {
+                        path: 'unreadmessages',
+                    },
+                })
+                .populate({
+                    path: "notifications",
+                    populate: {
+                        path: "user",
+                        select: "name imgUrl username"
+                    },
                     options: {
                         sort: {
-                            createAt: -1
+                            date: -1
                         }
-                    }
-                },
-            })
-                .populate({
-                    path: "conversations",
-                    populate: {
-                        path: "unreadmessages",
                     }
                 })
                 .then((result) => {
@@ -210,302 +237,376 @@ class User {
                         code: 200,
                         message: 'Get user success',
                         status: 'success',
-                        data: result!
-                    })
-                }).catch(error => {
+                        data: result!,
+                    });
+                })
+                .catch((error) => {
+                    console.log(error);
                     reject({
                         code: 500,
                         message: 'Get user fail',
                         status: 'fail',
-                    })
-                })
+                    });
+                });
         });
     }
     public updateInformation() {
-        return new Promise<IResolveRequest>(
-            async (resolve, reject) => {
-                UserModel.findOneAndUpdate(
-                    { username: this.username },
-                    {
-                        name: this.name,
-                        email: this.email,
-                        numberPhone: this.numberPhone,
-                        gender: this.gender,
-                        dateOfBirth: this.dateOfBirth,
-                        imgUrl: this._imgUrl
-                    }, {
-                    new: true
+        return new Promise<IResolveRequest>(async (resolve, reject) => {
+            UserModel.findOneAndUpdate(
+                { username: this.username },
+                {
+                    name: this.name,
+                    email: this.email,
+                    numberPhone: this.numberPhone,
+                    gender: this.gender,
+                    dateOfBirth: this.dateOfBirth,
+                    imgUrl: this._imgUrl,
+                },
+                {
+                    new: true,
                 }
-                )
-                    .then((result) => {
-                        const { name, email, gender, dateOfBirth, numberPhone, imgUrl } = result!;
-                        resolve({
-                            code: 200,
-                            status: 'success',
-                            message: 'Update successfully!',
-                            data: {
-                                name,
-                                email,
-                                gender,
-                                dateOfBirth,
-                                numberPhone,
-                                imgUrl
-                            },
-                        });
-                    })
-                    .catch((error) => {
-                        console.log(error);
-                        reject({
-                            code: 500,
-                            status: 'error',
-                            message: 'Update failed!',
-                        });
+            )
+                .then((result) => {
+                    const { name, email, gender, dateOfBirth, numberPhone, imgUrl } = result!;
+                    resolve({
+                        code: 200,
+                        status: 'success',
+                        message: 'Update successfully!',
+                        data: {
+                            name,
+                            email,
+                            gender,
+                            dateOfBirth,
+                            numberPhone,
+                            imgUrl,
+                        },
                     });
-            }
-        );
+                })
+                .catch((error) => {
+                    console.log(error);
+                    reject({
+                        code: 500,
+                        status: 'error',
+                        message: 'Update failed!',
+                    });
+                });
+        });
     }
     public updatePassword(oldPassword: string, newPassword: string) {
-        return new Promise<IResolveRequest>(
-            async (resolve, reject) => {
-                UserModel.findOne({ username: this.username })
-                    .then((user) => {
-                        if (user) {
-                            let hash = crypto.createHmac('sha512', user.salt!);
-                            hash.update(oldPassword);
-                            let value = hash.digest('hex');
-                            if (value === user.password) {
-                                const { newPassword: newPassword123, salt: salt123 } = this.hashPassword();
-                                UserModel.findOneAndUpdate(
-                                    { username: this.username },
-                                    {
-                                        password: newPassword123,
-                                        salt: salt123,
-                                    }
-                                )
-                                    .then((result) => {
-                                        resolve({
-                                            code: 200,
-                                            status: 'success',
-                                            message: 'Update successfully!',
-                                        });
-                                    })
-                                    .catch((error) => {
-                                        console.log(error);
-                                        reject({
-                                            code: 500,
-                                            status: 'error',
-                                            message: 'Update failed!',
-                                        });
+        return new Promise<IResolveRequest>(async (resolve, reject) => {
+            UserModel.findOne({ username: this.username })
+                .then((user) => {
+                    if (user) {
+                        let hash = crypto.createHmac('sha512', user.salt!);
+                        hash.update(oldPassword);
+                        let value = hash.digest('hex');
+                        if (value === user.password) {
+                            const { newPassword: newPassword123, salt: salt123 } = this.hashPassword();
+                            UserModel.findOneAndUpdate(
+                                { username: this.username },
+                                {
+                                    password: newPassword123,
+                                    salt: salt123,
+                                }
+                            )
+                                .then((result) => {
+                                    resolve({
+                                        code: 200,
+                                        status: 'success',
+                                        message: 'Update successfully!',
                                     });
-                            } else {
-                                reject({
-                                    code: 401,
-                                    message: 'Wrong password',
+                                })
+                                .catch((error) => {
+                                    console.log(error);
+                                    reject({
+                                        code: 500,
+                                        status: 'error',
+                                        message: 'Update failed!',
+                                    });
                                 });
-                            }
                         } else {
                             reject({
-                                code: 404,
-                                message: 'User is not found!',
+                                code: 401,
+                                message: 'Wrong password',
                             });
                         }
-                    })
-                    .catch((err) => {
-                        reject(err);
-                    });
-            }
-        );
+                    } else {
+                        reject({
+                            code: 404,
+                            message: 'User is not found!',
+                        });
+                    }
+                })
+                .catch((err) => {
+                    reject(err);
+                });
+        });
     }
     public addFriend({ _id }: { _id: string }) {
-        return new Promise<IResolveRequest>(
-            async (resolve, reject) => {
-                const existed = await UserModel.findById(this._id);
-                console.log(existed);
-                if (existed!.friends?.includes(_id)) return reject({
+        return new Promise<IResolveRequest>(async (resolve, reject) => {
+            const existed = await UserModel.findById(this._id);
+            if (existed!.friends?.includes(_id))
+                return reject({
                     code: 401,
                     message: 'User is already your friend!',
-                    status: 'fail'
-                })
-                else {
-                    const addToPending = UserModel.findOneAndUpdate({
+                    status: 'fail',
+                });
+            else {
+                const addToPending = UserModel.findOneAndUpdate(
+                    {
                         username: this.username,
-                    }, {
+                    },
+                    {
                         $push: {
                             friendsPending: _id,
-                        }
-                    })
-                    const addToRequest = UserModel.findByIdAndUpdate(_id, {
-                        $push: {
-                            friendsRequested: this.id,
-                        }
-                    })
-                    Promise.all([addToPending, addToRequest]).then(() => {
+                        },
+                    }
+                );
+                const addToRequest = UserModel.findByIdAndUpdate(_id, {
+                    $push: {
+                        friendsRequested: this.id,
+                    },
+                });
+                Promise.all([addToPending, addToRequest])
+                    .then(() => {
                         resolve({
                             code: 200,
                             status: 'success',
                             message: 'Sent friend request successfully!',
-                        })
+                        });
                     })
-                        .catch(error => {
-                            reject({
-                                code: 500,
-                                status: 'error',
-                                message: "Send request failed"
-                            });
-                        })
-
-                }
-
-
+                    .catch((error) => {
+                        reject({
+                            code: 500,
+                            status: 'error',
+                            message: 'Send request failed',
+                        });
+                    });
             }
-        );
+        });
     }
     public acceptRequest({ _id }: { _id: string }) {
         return new Promise<IResolveRequest>((resolve, reject) => {
             const addToFriendList = UserModel.findByIdAndUpdate(this._id, {
                 $push: {
-                    friends: _id
+                    friends: _id,
                 },
                 $pull: {
-                    friendsRequested: _id
-                }
-            })
+                    friendsRequested: _id,
+                },
+            });
             const addToFriendList2 = UserModel.findByIdAndUpdate(_id, {
                 $push: {
-                    friends: this.id
+                    friends: this.id,
                 },
                 $pull: {
-                    friendsPending: this.id
-                }
-            })
+                    friendsPending: this.id,
+                },
+            });
             Promise.all([addToFriendList, addToFriendList2])
                 .then(async () => {
-                    const conversation = await Conversations.createConversation({ _id1: this.id!, _id2: _id })
+                    const conversation = await Conversations.createConversation({
+                        _id1: this.id!,
+                        _id2: _id,
+                    });
                     const xxx1 = UserModel.findByIdAndUpdate(this._id, {
                         $push: {
-                            conversations: conversation._id
-                        }
-
-                    })
+                            conversations: conversation._id,
+                        },
+                    });
                     const xxx2 = UserModel.findByIdAndUpdate(_id, {
                         $push: {
-                            conversations: conversation._id
-                        }
-                    })
+                            conversations: conversation._id,
+                        },
+                    });
                     Promise.all([xxx1, xxx2]).then(() => {
                         resolve({
                             code: 200,
                             status: 'success',
                             message: 'Agree request successfully!',
-                        })
-                    })
+                        });
+                    });
                 })
-                .catch(error => {
+                .catch((error) => {
                     reject({
                         code: 500,
                         status: 'error',
-                        message: "Agree request failed"
+                        message: 'Agree request failed',
                     });
-                })
-        })
+                });
+        });
     }
     public rejectRequest({ _id }: { _id: string }) {
         return new Promise<IResolveRequest>((resolve, reject) => {
             const removeRequest = UserModel.findByIdAndUpdate(this._id, {
                 $pull: {
-                    friendsRequested: _id
-                }
-            })
+                    friendsRequested: _id,
+                },
+            });
             const removePending = UserModel.findByIdAndUpdate(_id, {
                 $push: {
-                    friendsRejected: this._id
+                    friendsRejected: this._id,
                 },
                 $pull: {
-                    friendsPending: this._id
-                }
-            })
+                    friendsPending: this._id,
+                },
+            });
             Promise.all([removeRequest, removePending])
                 .then(() => {
                     resolve({
                         code: 200,
                         status: 'success',
                         message: 'Reject request successfully!',
-                    })
+                    });
                 })
-                .catch(error => {
+                .catch((error) => {
                     reject({
                         code: 500,
                         status: 'error',
-                        message: "Reject request failed"
+                        message: 'Reject request failed',
                     });
-                })
-        })
+                });
+        });
     }
     public deleteFriend({ _id }: { _id: string }) {
-        return new Promise<IResolveRequest>(
-            async (resolve, reject) => {
-                UserModel.findOneAndUpdate(
-                    { username: this.username },
-                    {
-                        $pull: {
-                            friends: _id,
-                        },
-                    }
-                )
-                    .then((result) => {
-                        resolve({
-                            code: 200,
-                            status: 'success',
-                            message: 'Update successfully!',
-                        });
-                    })
-                    .catch((error) => {
-                        console.log(error);
-                        reject({
-                            code: 500,
-                            status: 'error',
-                            message: 'Update failed!',
-                        });
+        return new Promise<IResolveRequest>(async (resolve, reject) => {
+            UserModel.findOneAndUpdate(
+                { username: this.username },
+                {
+                    $pull: {
+                        friends: _id,
+                    },
+                }
+            )
+                .then((result) => {
+                    resolve({
+                        code: 200,
+                        status: 'success',
+                        message: 'Update successfully!',
                     });
-            }
-        );
+                })
+                .catch((error) => {
+                    console.log(error);
+                    reject({
+                        code: 500,
+                        status: 'error',
+                        message: 'Update failed!',
+                    });
+                });
+        });
     }
-    public static addMessage({ messageId, userId }: { messageId: string, userId: string }) {
+    public static addMessage({ messageId, userId }: { messageId: string; userId: string }) {
         return UserModel.findByIdAndUpdate(userId, {
             $push: {
-                messages: messageId
-            }
-        })
+                messages: messageId,
+            },
+        });
     }
-    public static handleSearchFriend({ type, value }: { type: string | undefined, value: string | undefined }) {
+    public static handleSearchFriend({
+        type,
+        value,
+    }: {
+        type: string | undefined;
+        value: string | undefined;
+    }) {
         return new Promise<IResolveRequest>(async (resolver, reject) => {
             if (!type || !value) {
                 reject({
                     code: 400,
                     status: 'error',
-                    message: 'Missing params'
-                })
+                    message: 'Missing params',
+                });
             } else {
-                const user = await UserModel.find({
-                    [type]: value
-                }, "_id username name imgUrl");
+                const user = await UserModel.find(
+                    {
+                        [type]: value,
+                    },
+                    '_id username name imgUrl'
+                );
                 if (user) {
                     resolver({
                         code: 200,
                         status: 'success',
                         message: 'Search successfully!',
                         data: user,
-                    })
+                    });
                 } else {
                     reject({
                         code: 404,
                         status: 'error',
                         message: 'User is not found!',
-                    })
+                    });
                 }
             }
-
-
+        });
+    }
+    public static getConversations(_id: string) {
+        return new Promise<{ code: number, status: string, message: string, data: any }>((resolve, reject) => {
+            UserModel.findById(_id)
+                .populate({
+                    path: 'conversations',
+                    populate: {
+                        path: 'participants',
+                        select: ['username', 'name', 'imgUrl'],
+                    },
+                })
+                .populate({
+                    path: 'conversations',
+                    populate: {
+                        path: 'latest',
+                        options: {
+                            sort: {
+                                createAt: -1,
+                            },
+                        },
+                    },
+                })
+                .populate({
+                    path: 'conversations',
+                    populate: {
+                        path: 'unreadmessages',
+                    },
+                })
+                .then(result => {
+                    resolve({
+                        code: 200,
+                        status: 'success',
+                        message: "Get conversations successfully",
+                        data: result!.conversations
+                    })
+                })
+                .catch(error => {
+                    reject({
+                        code: 401,
+                        status: "failed",
+                        message: "Failed to get conversations"
+                    })
+                })
+        })
+    }
+    public static getListFriend(_id: string) {
+        return new Promise<{ code: number, status: string, message: string, data: any }>((resolve, reject) => {
+            UserModel.findById(_id)
+                .then(result => {
+                    resolve({
+                        code: 200,
+                        status: 'success',
+                        message: "Get list friend successfully",
+                        data: {
+                            friends: result!.friends,
+                            friendsRequested: result!.friendsRequested,
+                            friendsPending: result!.friendsPending,
+                            friendsRejected: result!.friendsRejected
+                        }
+                    })
+                })
+                .catch(error => {
+                    reject({
+                        code: 401,
+                        status: "failed",
+                        message: "Failed to get list friend"
+                    })
+                })
         })
     }
     private hashPassword() {

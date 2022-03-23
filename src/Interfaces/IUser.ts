@@ -1,4 +1,5 @@
 import IConversation from "./IConversation";
+import INotification from "./INotification";
 
 export default interface IUser {
     _id?: string;
@@ -17,6 +18,9 @@ export default interface IUser {
     friendsRequested?: Array<string>;
     friendsPending?: Array<string>;
     friendsRejected?: Array<string>;
+    notifications?: Array<
+        INotification
+    >;
 }
 export interface dateOfBirth {
     date: number;
