@@ -69,16 +69,28 @@ io.on("connection", (socket) => {
             } = JSON.parse(data);
             redisClient.set(`choose_conversation_${user_id}`, conversation_id);
         })
-    socket.on("on_typing", async (data: string) => {
-        const id = await redisClient.get(`user_${data}`);
+    socket.on("on_typing", async (data: {
+        senderId: string,
+        conversationId: string,
+    }) => {
+        const id = await redisClient.get(`user_${data.senderId}`);
         if (id) {
-            io.to(id).emit("reply_typing", true);
+            io.to(id).emit("reply_typing", {
+                conversationId: data.conversationId,
+                isTyping: true
+            });
         }
     })
-    socket.on("not_typing", async (data: string) => {
-        const id = await redisClient.get(`user_${data}`);
+    socket.on("not_typing", async (data: {
+        senderId: string,
+        conversationId: string,
+    }) => {
+        const id = await redisClient.get(`user_${data.senderId}`);
         if (id) {
-            io.to(id).emit("reply_typing", false);
+            io.to(id).emit("reply_typing", {
+                conversationId: data.conversationId,
+                isTyping: false
+            });
         }
     })
     socket.on("live_noti", async (param: string) => {
