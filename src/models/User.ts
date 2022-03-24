@@ -219,16 +219,28 @@ class User {
                     },
                 })
                 .populate({
-                    path: "notifications",
+                    path: 'notifications',
                     populate: {
-                        path: "user",
-                        select: "name imgUrl username"
+                        path: 'user',
+                        select: 'name imgUrl username',
                     },
                     options: {
                         sort: {
-                            date: -1
-                        }
-                    }
+                            date: -1,
+                        },
+                    },
+                })
+                .populate({
+                    path: 'friends',
+                    select: 'name username imgUrl _id',
+                })
+                .populate({
+                    path: "friendsRequested",
+                    select: 'name username imgUrl _id',
+                })
+                .populate({
+                    path: "friendsPending",
+                    select: 'name username imgUrl _id',
                 })
                 .then((result) => {
                     delete result!.password;
@@ -541,73 +553,89 @@ class User {
         });
     }
     public static getConversations(_id: string) {
-        return new Promise<{ code: number, status: string, message: string, data: any }>((resolve, reject) => {
-            UserModel.findById(_id)
-                .populate({
-                    path: 'conversations',
-                    populate: {
-                        path: 'participants',
-                        select: ['username', 'name', 'imgUrl'],
-                    },
-                })
-                .populate({
-                    path: 'conversations',
-                    populate: {
-                        path: 'latest',
-                        options: {
-                            sort: {
-                                createAt: -1,
+        return new Promise<{ code: number; status: string; message: string; data: any }>(
+            (resolve, reject) => {
+                UserModel.findById(_id)
+                    .populate({
+                        path: 'conversations',
+                        populate: {
+                            path: 'participants',
+                            select: ['username', 'name', 'imgUrl'],
+                        },
+                    })
+                    .populate({
+                        path: 'conversations',
+                        populate: {
+                            path: 'latest',
+                            options: {
+                                sort: {
+                                    createAt: -1,
+                                },
                             },
                         },
-                    },
-                })
-                .populate({
-                    path: 'conversations',
-                    populate: {
-                        path: 'unreadmessages',
-                    },
-                })
-                .then(result => {
-                    resolve({
-                        code: 200,
-                        status: 'success',
-                        message: "Get conversations successfully",
-                        data: result!.conversations
                     })
-                })
-                .catch(error => {
-                    reject({
-                        code: 401,
-                        status: "failed",
-                        message: "Failed to get conversations"
+                    .populate({
+                        path: 'conversations',
+                        populate: {
+                            path: 'unreadmessages',
+                        },
                     })
-                })
-        })
+                    .then((result) => {
+                        resolve({
+                            code: 200,
+                            status: 'success',
+                            message: 'Get conversations successfully',
+                            data: result!.conversations,
+                        });
+                    })
+                    .catch((error) => {
+                        reject({
+                            code: 401,
+                            status: 'failed',
+                            message: 'Failed to get conversations',
+                        });
+                    });
+            }
+        );
     }
     public static getListFriend(_id: string) {
-        return new Promise<{ code: number, status: string, message: string, data: any }>((resolve, reject) => {
-            UserModel.findById(_id)
-                .then(result => {
-                    resolve({
-                        code: 200,
-                        status: 'success',
-                        message: "Get list friend successfully",
-                        data: {
-                            friends: result!.friends,
-                            friendsRequested: result!.friendsRequested,
-                            friendsPending: result!.friendsPending,
-                            friendsRejected: result!.friendsRejected
-                        }
+        return new Promise<{ code: number; status: string; message: string; data: any }>(
+            (resolve, reject) => {
+                UserModel.findById(_id)
+                    .populate({
+                        path: 'friends',
+                        select: 'name username imgUrl _id',
                     })
-                })
-                .catch(error => {
-                    reject({
-                        code: 401,
-                        status: "failed",
-                        message: "Failed to get list friend"
+                    .populate({
+                        path: "friendsRequested",
+                        select: 'name username imgUrl _id',
                     })
-                })
-        })
+                    .populate({
+                        path: "friendsPending",
+                        select: 'name username imgUrl _id',
+                    })
+                    .then((result) => {
+                        resolve({
+                            code: 200,
+                            status: 'success',
+                            message: 'Get list friend successfully',
+                            data: {
+                                friends: result!.friends,
+                                friendsRequested: result!.friendsRequested,
+                                friendsPending: result!.friendsPending,
+                                friendsRejected: result!.friendsRejected,
+                            },
+                        });
+                    })
+                    .catch((error) => {
+                        reject({
+                            code: 401,
+                            status: 'failed',
+                            message: 'Failed to get list friend',
+                        });
+                    });
+            }
+        );
     }
     private hashPassword() {
         const salt = crypto.randomBytes(20).toString('hex');

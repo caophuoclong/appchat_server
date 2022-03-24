@@ -89,6 +89,7 @@ io.on("connection", (socket) => {
     })
     socket.on("accept_friend", async (param) => {
         const id = await redisClient.get(`user_${param}`);
+        console.log("123", id);
         if (id) {
             io.to(id).emit("rep_accept_friend");
         }

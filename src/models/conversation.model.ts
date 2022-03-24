@@ -27,10 +27,15 @@ const conversationSchema = new mongoose.Schema({
     name: {
         type: String
     },
+    deleted: {
+        type: Boolean,
+        default: false
+    },
     createAt: {
         type: Date,
         default: Date.now,
     },
+
 });
 
 const conversationModel = mongoose.model<IConversation & mongoose.Document>("Conversations", conversationSchema);

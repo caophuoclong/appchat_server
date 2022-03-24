@@ -25,8 +25,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./cert.pem:/etc/ssl/cert.pem
-      - ./key.pem:/etc/ssl/key.pem
+      - ./nginx/cert.pem:/etc/ssl/cert.pem
+      - ./nginx/key.pem:/etc/ssl/key.pem
       - ./nginx/tcplong.xyz:/etc/nginx/conf.d/tcplong.conf
     
 
