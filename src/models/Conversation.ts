@@ -15,9 +15,30 @@ class Conversations implements IConversation {
         this.createAt = createAt;
         this.modifiedAt = modifiedAt;
     }
-    public static async getConverSationById(id: string) {
-        await Conversations.makeUnReadMessageEmpty({ conversationId: id });
-        return ConversationModel.findById(id).populate("messages").sort({ createAt: -1 })
+    public static async getConverSationById(id: string, page: number) {
+        let perMessageEveryRequest = 20;
+        const conversation = await ConversationModel.findById(id);
+        const conversationMessagesLength = conversation!.messages.length;
+        const isMore = conversationMessagesLength > perMessageEveryRequest * page;
+        const messages = await conversation!.populate({
+            path: "messages", options: {
+                sort: {
+                    createAt: -1
+                },
+                limit: perMessageEveryRequest,
+                skip: (page - 1) * perMessageEveryRequest
+            }
+        })
+        return {
+            conversation: {
+                length: conversationMessagesLength,
+                page: page,
+                isMore,
+                _id: conversation!._id,
+                participants: conversation!.participants,
+                messages: messages!.messages
+            }
+        }
     }
     public static createConversation({ _id1, _id2 }: { _id1: string, _id2: string }) {
         const conversation = new ConversationModel({

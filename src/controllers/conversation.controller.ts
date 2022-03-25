@@ -19,10 +19,12 @@ export default class Conversation implements IController {
     }
     initialRouter() {
         this._router.get(`${this.path}/:id`, validateMiddleware, this.getConversation);
+        this.router.put(`${this.path}/:_id`, validateMiddleware, this.makeUnReadMessageEmpty);
     }
-    private getConversation(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    private getConversation(req: Request<{ id: string }, {}, {}, { page?: number }>, res: Response, next: NextFunction) {
         const { id } = req.params;
-        Conversations.getConverSationById(id).then(result => {
+        const { page } = req.query
+        Conversations.getConverSationById(id, page!).then(result => {
             res.json({
                 status: 200,
                 message: "Get conversation successfully!",
@@ -31,6 +33,15 @@ export default class Conversation implements IController {
         }).catch(error => {
             next(new TokenException("failed", "Get conversation failed"))
         })
+    }
+    private makeUnReadMessageEmpty(req: Request<{ _id: string }>, res: Response, next: NextFunction) {
+        const { _id } = req.params;
+        Conversations.makeUnReadMessageEmpty({ conversationId: _id }).then((result) => {
+            return res.json({
+                code: 200,
+                status: "success",
+            })
+        }).catch(error => next(new TokenException("failed", "Make unread message empty failed")))
     }
 }
 // Language: typescript

@@ -40,7 +40,6 @@ io.on("connection", (socket) => {
             message: IMessage
         };
         redisClient.get(`user_${message.receiverId}`).then((result) => {
-            console.log(result);
             io.to(result!).emit("receive_message", JSON.stringify({
                 message,
                 conversationId
@@ -57,7 +56,6 @@ io.on("connection", (socket) => {
     })
     socket.on("disconnect", () => {
         const userId = socket.users[0] && socket.users[0].id;
-        console.log(userId);
         redisClient.del(`user_${userId}`);
         redisClient.del(`choose_conversation_${userId}`)
 

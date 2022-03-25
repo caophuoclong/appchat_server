@@ -31,19 +31,21 @@ class Token implements IController {
         try {
             const decoded = jwt.verify(refreshToken, JWT_SECRET_REFRESH!) as IUserData;
             const { username, _id } = decoded;
-            const storedreFreshToken = await redisClient.get(username);
-            console.log(storedreFreshToken);
-            if (refreshToken === (storedreFreshToken)) {
-                const accessToken = createAccessToken(decoded);
-                return res.json({
-                    code: 200,
-                    status: "success",
-                    message: "Refresh token successfully!",
-                    token: accessToken
-                })
-            } else {
-                return next(new TokenException("relogin", "Invalid token!"));
-            }
+            redisClient.get(username).then(result => {
+                console.log(result);
+                if (refreshToken === (result)) {
+                    const accessToken = createAccessToken(decoded);
+                    return res.json({
+                        code: 200,
+                        status: "success",
+                        message: "Refresh token successfully!",
+                        token: accessToken
+                    })
+                } else {
+                    return next(new TokenException("relogin", "Invalid token!"));
+                }
+
+            });
         } catch (error) {
             console.log(error);
             if (error.name === "TokenExpiredError") {
