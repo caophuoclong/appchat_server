@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import type { ConnectOptions } from "mongoose"
-import { MONGO_USERNAME, MONGO_PASSWORD, MONGO_HOST } from "./configs/index"
+import { MONGO_USERNAME, MONGO_PASSWORD, MONGO_HOST, MONGO_URL } from "./configs/index"
 import errorHandling from "./middlewares/errorHandling";
 import redisClient from "./utils/redis-client";
 import cors from "cors"
@@ -40,7 +40,7 @@ class App {
         this.app.use(errorHandling);
     }
     private initialConnectDatabase() {
-        mongoose.connect(`mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}:27017`,
+        mongoose.connect(MONGO_URL ? MONGO_URL : `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOST}:27017`,
             {
                 useNewUrlParser: true,
                 dbName: "appchat"
