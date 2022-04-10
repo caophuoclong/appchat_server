@@ -4,6 +4,8 @@ WORKDIR /app/src
 
 COPY package*.json ./
 
+COPY yarn.lock ./
+
 RUN npm install 
 
 COPY tsconfig.json ./
