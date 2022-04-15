@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema({
     ],
     imgUrl: {
         type: String,
-        default: ""
+        default: "https://picsum.photos/56"
     },
     notifications: [
         {
