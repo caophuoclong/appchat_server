@@ -8,6 +8,10 @@ class Conversations implements IConversation {
     createAt?: Date;
     modifiedAt?: Date;
     conversation?: IConversation;
+    creator: string;
+    imgUrl: string;
+    type: string;
+    unReadMessage: IMessage[];
     constructor({ _id, participants, messages, modifiedAt, createAt }: IConversation) {
         this._id = _id;
         this.participants = [];
@@ -53,18 +57,16 @@ class Conversations implements IConversation {
             $push: {
                 messages: messageId,
             },
-        };
-        const update2 = {
             $set: {
                 latest: messageId,
             }
-        }
+        };
+
         const options = {
             new: true,
         };
-        const xxx1 = ConversationModel.findByIdAndUpdate(conversationId, update, options);
-        const xxx2 = ConversationModel.findByIdAndUpdate(conversationId, update2, options);
-        return Promise.all([xxx1, xxx2]);
+        const xxx1 = ConversationModel.findByIdAndUpdate(conversationId, update, options).populate("participants").select("participants type");
+        return Promise.all([xxx1]);
     }
     public static addToUnReadMessages({ messageId, conversationId }: { messageId: string, conversationId: string }) {
         const update = {
@@ -77,18 +79,36 @@ class Conversations implements IConversation {
         };
         return ConversationModel.findByIdAndUpdate(conversationId, update, options);
     }
-    public static makeUnReadMessageEmpty({ conversationId }: { conversationId: string }) {
-        const update = {
-            $set: {
-                unreadmessages: [
+    public static addToUnReadGroup({ messageId, conversationId, userId }: { messageId: string, conversationId: string, userId: string }) {
+        ConversationModel.findById(conversationId).select("groupUnRead").then((unReadGroups) => {
+            unReadGroups?.groupUnRead?.find(gr => gr.user.toString() === userId.toString())?.messages.push(messageId);
+            unReadGroups?.save()
+        })
+    }
+    public static makeUnReadMessageEmpty({ conversationId, userId }: { conversationId: string, userId: string }) {
+        return ConversationModel.findById(conversationId).then(async (conversation) => {
+            if (conversation!.type === "direct") {
+                const update = {
+                    $set: {
+                        unreadmessages: [
 
-                ],
-            },
-        };
-        const options = {
-            new: true,
-        };
-        return ConversationModel.findByIdAndUpdate(conversationId, update, options);
+                        ],
+                    },
+                };
+                const options = {
+                    new: true,
+                };
+                await ConversationModel.findByIdAndUpdate(conversationId, update, options);
+                return ""
+            } else if (conversation!.type === "group") {
+                conversation?.groupUnRead?.find(gr => gr.user.toString() === userId.toString())?.messages.splice(0, 10000000000);
+                await conversation?.save();
+                return ""
+            } else {
+                return ""
+            }
+        })
+
     }
     public static removeMessage({ messageId, conversationId }: { messageId: string, conversationId: string }) {
         const update = {

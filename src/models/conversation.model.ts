@@ -35,6 +35,34 @@ const conversationSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    creator: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users"
+    },
+    type: {
+        type: String,
+        default: "direct"
+    },
+    imgUrl: {
+        type: String,
+        default: "https://picsum.photos/400"
+    },
+    groupUnRead: [
+        {
+            user: {
+                type: String,
+            },
+            messages: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Messages"
+                }
+            ],
+            default: {}
+        }
+    ]
+
+
 
 });
 

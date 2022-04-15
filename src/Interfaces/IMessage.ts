@@ -3,7 +3,6 @@ export default interface IMessage {
     _id?: string;
     text: string;
     senderId: string;
-    receiverId: string;
     createAt?: Date;
     modifiedAt?: Date;
     type: messageType;

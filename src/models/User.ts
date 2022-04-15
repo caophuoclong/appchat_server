@@ -219,6 +219,12 @@ class User {
                     },
                 })
                 .populate({
+                    path: "conversations",
+                    populate: {
+                        path: "creator"
+                    }
+                })
+                .populate({
                     path: 'notifications',
                     populate: {
                         path: 'user',

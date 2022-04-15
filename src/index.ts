@@ -1,17 +1,19 @@
 import Express from "./App";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { AppController, ConversationController, MessageController, TokenController, UserController, NotificationController } from "./controllers";
+import { AppController, ConversationController, MessageController, TokenController, UserController, NotificationController, GroupController } from "./controllers";
 import redisClient from "./utils/redis-client";
 import { IMessage } from "./Interfaces";
 import { PORT } from "./configs"
+import ConversationModel from "./models/conversation.model";
 const app = new Express([
     new AppController().router,
     new TokenController().router,
     new UserController().router,
     new MessageController().router,
     new ConversationController().router,
-    new NotificationController().router
+    new NotificationController().router,
+    new GroupController().router,
 ]);
 const server = createServer(app.app);
 const io = new Server(server, {
@@ -27,31 +29,51 @@ io.on("connection", (socket) => {
     socket.users = [];
     io.to(id).emit("new_connection", id);
     socket.on("init_user", (data: string) => {
-
         socket.users.push({
             id: data
         })
         redisClient.set(`user_${data}`, id);
     })
-
+    socket.on("join_room", (id) => {
+        socket.join(`group_${id}`);
+    })
     socket.on("send_message", (data: string) => {
-        const { conversationId, message } = JSON.parse(data) as {
+        const { conversationId, message, type } = JSON.parse(data) as {
             conversationId: string,
-            message: IMessage
+            message: IMessage,
+            type: string
         };
-        redisClient.get(`user_${message.receiverId}`).then((result) => {
-            io.to(result!).emit("receive_message", JSON.stringify({
+        if (type === "direct") {
+            ConversationModel.findById(conversationId).select("participants").then(conversation => {
+                const receiver = conversation?.participants.find(participant => participant._id?.toString() !== message.senderId);
+                redisClient.get(`user_${receiver}`).then((result) => {
+                    io.to(result!).emit("receive_message", JSON.stringify({
+                        message,
+                        conversationId,
+                        type: "direct"
+                    }));
+                });
+            })
+        } else {
+            socket.broadcast.to(`group_${conversationId}`).emit("receive_message", JSON.stringify({
                 message,
-                conversationId
-            }));
-        });
+                conversationId,
+                type: "group"
+            }))
+        }
     })
     socket.on("check_online", async (data: string) => {
         const user = await redisClient.get(`user_${data}`);
         if (user) {
-            socket.emit("re_check_online", true);
+            socket.emit("re_check_online", {
+                id: data,
+                check: true,
+            });
         } else {
-            socket.emit("re_check_online", false);
+            socket.emit("re_check_online", {
+                id: data,
+                check: false
+            });
         }
     })
     socket.on("disconnect", () => {

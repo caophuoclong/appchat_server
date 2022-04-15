@@ -24,12 +24,11 @@ class MessageController implements IController {
     private addNewMessage(req: Request<{ conversationId: string }, {}, Omit<IMessage, "conversationId | senderId">>, res: Response, next: NextFunction) {
         const { conversationId } = req.params;
         const { _id, username } = req.user;
-        const { type, text, receiverId } = req.body;
+        const { type, text } = req.body;
         const message = new Message({
             type,
             text,
             senderId: _id,
-            receiverId,
             conversationId
         });
         message.newMessage()

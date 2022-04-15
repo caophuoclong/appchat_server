@@ -36,7 +36,8 @@ export default class Conversation implements IController {
     }
     private makeUnReadMessageEmpty(req: Request<{ _id: string }>, res: Response, next: NextFunction) {
         const { _id } = req.params;
-        Conversations.makeUnReadMessageEmpty({ conversationId: _id }).then((result) => {
+        const { _id: userId } = req.user;
+        Conversations.makeUnReadMessageEmpty({ conversationId: _id, userId }).then((result) => {
             return res.json({
                 code: 200,
                 status: "success",

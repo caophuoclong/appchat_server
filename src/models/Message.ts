@@ -8,15 +8,13 @@ class Message implements IMessage {
     _id?: string;
     text: string;
     senderId: string;
-    receiverId: string;
     createAt: Date;
     modifiedAt?: Date;
     type: messageType;
     conversationId: string;
-    constructor({ text, senderId, receiverId, modifiedAt, type, conversationId }: IMessage) {
+    constructor({ text, senderId, modifiedAt, type, conversationId }: IMessage) {
         this.text = text;
         this.senderId = senderId;
-        this.receiverId = receiverId;
         this.createAt = new Date();
         this.modifiedAt = modifiedAt;
         this.type = type;
@@ -27,18 +25,27 @@ class Message implements IMessage {
             const message = new MessageModel({
                 text: this.text,
                 senderId: this.senderId,
-                receiverId: this.receiverId,
                 type: this.type,
             });
             message.save()
                 .then(async (result) => {
                     this._id = result.id;
-                    const addToConversation = Conversation.addMessage({ messageId: this._id!, conversationId: this.conversationId! })
-                    const userChoosen = await redisClient.get(`choose_conversation_${this.receiverId}`);
-                    const addToUnReaddMessages = userChoosen === this.conversationId ? null : Conversation.addToUnReadMessages({ messageId: this._id!, conversationId: this.conversationId! });
-                    const addToUser1 = User.addMessage({ messageId: this._id!, userId: this.senderId! });
-                    const addToUser2 = User.addMessage({ messageId: this._id!, userId: this.receiverId! });
-                    Promise.all([addToConversation, addToUser1, addToUser2, addToUnReaddMessages]).then(() => {
+                    const addToConversation = await Conversation.addMessage({ messageId: this._id!, conversationId: this.conversationId! })
+                    const promises: Promise<any>[] = [];
+                    addToConversation[0]!.participants.forEach(async (participant) => {
+                        promises.push(User.addMessage({ messageId: this._id!, userId: participant._id! }) as any)
+                        const userChoosen = await redisClient.get(`choose_conversation_${participant._id}`);
+                        if (participant._id?.toString() !== this.senderId && addToConversation[0]!.type === "direct") {
+                            userChoosen === this.conversationId ? null : await Conversation.addToUnReadMessages({ messageId: this._id!, conversationId: this.conversationId! });
+                        } else if (participant._id?.toString() !== this.senderId && addToConversation[0]!.type === "group") {
+                            userChoosen === this.conversationId ? null : await Conversation.addToUnReadGroup({
+                                messageId: this._id!,
+                                conversationId: this.conversationId!,
+                                userId: participant._id!
+                            })
+                        }
+                    })
+                    Promise.all([addToConversation, ...promises]).then(() => {
                         resolve({
                             code: 200,
                             status: "success",

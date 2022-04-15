@@ -11,11 +11,7 @@ const messageSchema = new mongoose.Schema({
         ref: "Users",
         required: true,
     },
-    receiverId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Users",
-        required: true,
-    },
+
     createAt: {
         type: Date,
         default: Date.now,
