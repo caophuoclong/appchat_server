@@ -9,6 +9,10 @@ const notificationSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    group: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Conversations"
+    },
     type: {
         type: String,
     },

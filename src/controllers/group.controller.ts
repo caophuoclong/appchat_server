@@ -21,6 +21,7 @@ class GroupController implements IController {
         this.router.get(this.path, this.handleTestEndPoint);
         this.router.post(`${this.path}/create`, validateMiddleware, this.handleCreateGroup);
         this.router.put(`${this.path}/add`, validateMiddleware, this.handleAddNewMember)
+        this.router.get(`${this.path}/get/:id`, validateMiddleware, this.handleGetConversation)
     }
     handleTestEndPoint(req: Request, res: Response) {
         res.json("Success")
@@ -28,15 +29,18 @@ class GroupController implements IController {
     }
     handleCreateGroup(req: Request<{}, {}, {
         name: string,
-        participants: Array<string>
+        participants: Array<string>,
+        avatar: string
     }>, res: Response, next: NextFunction) {
-        const { name, participants } = req.body;
+        const { name, participants, avatar } = req.body;
         const { _id } = req.user;
-        Group.createGroupConversation({ creator: _id, name, participants }).then(() => {
+
+        Group.createGroupConversation({ creator: _id, name, participants, avatar }).then((result) => {
             res.status(200).json({
                 code: 200,
                 status: "success",
-                message: "Create group successfully!"
+                message: "Create group successfully!",
+                data: result
             })
         })
             .catch(error => {
@@ -49,11 +53,12 @@ class GroupController implements IController {
     }
     handleAddNewMember(req: Request<{}, {}, { _idConversation: string, _id: Array<string> }>, res: Response, next: NextFunction) {
         const { _idConversation, _id } = req.body;
-        Group.addMemberToGroup({ _idConversation, _id }).then(() => {
+        Group.addMemberToGroup({ _idConversation, _id }).then((result) => {
             res.status(200).json({
                 code: 200,
                 status: "success",
-                message: "Add member successfully!"
+                message: "Add member successfully!",
+                data: result
             })
         })
             .catch(error => {
@@ -61,6 +66,24 @@ class GroupController implements IController {
                     code: 401,
                     status: "fail",
                     message: "Add member failed!"
+                })
+            })
+    }
+    handleGetConversation(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+        const { id } = req.params
+        Group.getGroupConversation(id).then((result) => {
+            res.status(200).json({
+                code: 200,
+                status: "success",
+                message: "Get group successfully!",
+                data: result
+            })
+        })
+            .catch(error => {
+                res.status(200).json({
+                    code: 401,
+                    status: "fail",
+                    message: "Get group failed!"
                 })
             })
     }

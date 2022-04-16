@@ -126,6 +126,11 @@ io.on("connection", (socket) => {
             io.to(id).emit("rep_accept_friend");
         }
     })
+    socket.on("add_conversation", async (data) => {
+        const data1: { id: string, conversation: {} } = JSON.parse(data);
+        const id = await redisClient.get(`user_${data1.id}`);
+        io.to(id!).emit("add_conversation", JSON.stringify(data1.conversation))
+    })
 })
 
 server.listen(PORT, () => {

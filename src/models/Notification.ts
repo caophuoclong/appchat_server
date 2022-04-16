@@ -59,10 +59,13 @@ class Notification {
         return new Promise<{ code: number, status: string, message: string, data: Array<INotification> }>((resolve, reject) => {
             UserModel.findById(id).populate({
                 path: "notifications",
-                populate: {
+                populate: [{
                     path: "user",
                     select: "username name imgUrl"
-                },
+                }, {
+                    path: "group",
+                    select: "name"
+                }],
                 options: {
                     sort: {
                         date: -1

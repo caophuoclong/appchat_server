@@ -226,10 +226,13 @@ class User {
                 })
                 .populate({
                     path: 'notifications',
-                    populate: {
+                    populate: [{
                         path: 'user',
                         select: 'name imgUrl username',
-                    },
+                    }, {
+                        path: "group",
+                        select: "name"
+                    }],
                     options: {
                         sort: {
                             date: -1,
