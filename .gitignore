@@ -9,3 +9,4 @@ dump
 .env
 private_env
 docker-compose.yml
+backup
