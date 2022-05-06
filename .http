@@ -1,0 +1,5 @@
+# @name signupNewAccount
+POST http://localhost:4004/user/signup 
+Content-Type: application/json
+# @name test
+GET http://localhost:4004/ HTTP/1.0

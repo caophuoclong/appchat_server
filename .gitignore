@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+redis
+env-docker
+env
+./redis
+dump
+.env
+private_env
