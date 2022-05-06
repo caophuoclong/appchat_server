@@ -4,6 +4,7 @@ services:
   mongodb:
     container_name: mongo
     image: mongo:latest
+    restart: always
     ports:
       - "27017:27017"
     volumes:
@@ -13,27 +14,27 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=516489
   redis:
     image: redis:latest
+    restart: always
     container_name: redis
     ports:
       - "6379:6379"
     volumes:
       - ./redis:/data
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/cert.pem:/etc/ssl/cert.pem
-      - ./nginx/key.pem:/etc/ssl/key.pem
-      - ./nginx/tcplong.xyz:/etc/nginx/conf.d/tcplong.conf
+  # nginx:
+  #   image: nginx:latest
+  #   container_name: nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/cert.pem:/etc/ssl/cert.pem
+  #     - ./nginx/key.pem:/etc/ssl/key.pem
+  #     - ./nginx/tcplong.xyz:/etc/nginx/conf.d/tcplong.conf
     
-
-
   app:
     build: ./
     container_name: server
+    restart: always
     ports: 
       - 4004:4004
     volumes:
@@ -42,4 +43,3 @@ services:
       - mongodb
       - redis
 
-    
