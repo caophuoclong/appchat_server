@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon ./src/index.ts",
     "start": "node dist/index.js --name appchat_server --interpreter node --watch ./src",
-    "docker_build": "echo \"Error: no docker build specified\""
+    "docker_build": "cp ./private_env/docker-compose.yml ./docker-compose.yml && docker-compose build"
   },
   "repository": {
     "type": "git",
