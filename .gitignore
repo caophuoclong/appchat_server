@@ -6,7 +6,6 @@ env-docker
 env
 ./redis
 dump
-.env
 private_env
 docker-compose.yml
 database
